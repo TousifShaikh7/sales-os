@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { parse } from 'cookie';
-import { getOpportunities, createOpportunity, updateOpportunity } from '@/lib/services';
+import { getOpportunities, createOpportunity, updateOpportunity, getOpportunityById } from '@/lib/services';
 
 function getAuthUser(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -54,6 +54,20 @@ export async function PUT(request: NextRequest) {
   try {
     const data = await request.json();
     const { id, ...updateData } = data;
+
+    const opportunity = await getOpportunityById(id);
+    if (!opportunity) {
+      return NextResponse.json({ error: 'Opportunity not found' }, { status: 404 });
+    }
+
+    if (user.role !== 'founder' && opportunity.assignedTo !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    if (user.role !== 'founder') {
+      delete updateData.assignedTo;
+    }
+
     await updateOpportunity(id, updateData, user.id);
     return NextResponse.json({ success: true });
   } catch (error) {

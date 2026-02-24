@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sales OS
 
-## Getting Started
+Sales OS is a lightweight CRM and sales operations dashboard built with Next.js and Airtable.
+It provides teams with role-based visibility into leads, opportunities, activities, tasks, weekly reviews, and stage movement.
 
-First, run the development server:
+## Tech Stack
+
+- Next.js (App Router) + React + TypeScript
+- Tailwind CSS for UI styling
+- Airtable as the operational data store
+- JWT + HTTP-only cookie authentication
+
+## Core Features
+
+- **Authentication**: email/password login with JWT session cookies and protected routes.
+- **Role-aware access**:
+  - `founder` can view full data and team management pages.
+  - `field_sales` / `inside_sales` primarily see their assigned records.
+- **Sales workflow modules**:
+  - Leads management
+  - Opportunities and stage-based forecasting
+  - Activities logging
+  - Task tracking with overdue status
+  - Weekly reviews
+  - Stage history tracking for deal progression analytics
+- **Dashboard analytics**:
+  - Pipeline value and weighted forecast
+  - Active/won deal snapshots
+  - Recent activities and upcoming tasks
+  - Founder-only rep performance table
+
+## Data Model (Airtable)
+
+The app expects these Airtable tables:
+
+- `Users`
+- `Leads`
+- `Opportunities`
+- `Activities`
+- `Tasks`
+- `Weekly Reviews`
+- `Stage History`
+
+## Setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Configure environment variables:
+
+```bash
+AIRTABLE_API_KEY=your_key
+AIRTABLE_BASE_ID=your_base_id
+JWT_SECRET=your_secret
+```
+
+3. Run development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open `http://localhost:3000/setup` once to create the initial founder account.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev` — start local development server
+- `npm run build` — production build
+- `npm run start` — start production server
+- `npm run lint` — run ESLint

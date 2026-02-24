@@ -58,6 +58,29 @@ export async function getLeads(userId?: string, role?: string): Promise<Lead[]> 
   }));
 }
 
+export async function getLeadById(id: string): Promise<Lead | null> {
+  try {
+    const r = await base(TABLES.LEADS).find(id);
+    return {
+      id: r.id,
+      companyName: (r.get('Company Name') as string) || '',
+      contactPerson: (r.get('Contact Person') as string) || '',
+      email: (r.get('Email') as string) || '',
+      phone: (r.get('Phone') as string) || '',
+      source: (r.get('Source') as Lead['source']) || 'Other',
+      status: (r.get('Status') as Lead['status']) || 'New',
+      assignedTo: (r.get('Assigned To ID') as string) || '',
+      assignedToName: (r.get('Assigned To Name') as string) || '',
+      notes: (r.get('Notes') as string) || '',
+      createdAt: (r.get('Created At') as string) || new Date().toISOString(),
+      updatedAt: (r.get('Updated At') as string) || '',
+      opportunityId: (r.get('Opportunity ID') as string) || '',
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function createLead(data: Partial<Lead>): Promise<Lead> {
   const record = await base(TABLES.LEADS).create({
     'Company Name': data.companyName,
@@ -133,6 +156,32 @@ export async function getOpportunities(userId?: string, role?: string): Promise<
   });
 }
 
+export async function getOpportunityById(id: string): Promise<Opportunity | null> {
+  try {
+    const r = await base(TABLES.OPPORTUNITIES).find(id);
+    const stage = (r.get('Stage') as Opportunity['stage']) || 'Prospecting';
+    const dealValue = (r.get('Deal Value') as number) || 0;
+    return {
+      id: r.id,
+      name: (r.get('Name') as string) || '',
+      leadId: (r.get('Lead ID') as string) || '',
+      dealValue,
+      stage,
+      probability: getStageProbability(stage),
+      weightedValue: getWeightedValue(dealValue, stage),
+      expectedCloseDate: (r.get('Expected Close Date') as string) || '',
+      forecastCategory: getForecastCategory(stage),
+      assignedTo: (r.get('Assigned To ID') as string) || '',
+      assignedToName: (r.get('Assigned To Name') as string) || '',
+      notes: (r.get('Notes') as string) || '',
+      createdAt: (r.get('Created At') as string) || new Date().toISOString(),
+      updatedAt: (r.get('Updated At') as string) || '',
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function createOpportunity(data: Partial<Opportunity>): Promise<Opportunity> {
   const stage = data.stage || 'Prospecting';
   const dealValue = data.dealValue || 0;
@@ -198,6 +247,9 @@ export async function getActivities(userId?: string, role?: string, opportunityI
   let formula = '';
   if (opportunityId) {
     formula = `{Opportunity ID} = '${opportunityId}'`;
+    if (role && role !== 'founder' && userId) {
+      formula = `AND(${formula}, {Performed By ID} = '${userId}')`;
+    }
   } else if (role && role !== 'founder' && userId) {
     formula = `{Performed By ID} = '${userId}'`;
   }
@@ -278,6 +330,31 @@ export async function getTasks(userId?: string, role?: string): Promise<Task[]> 
   });
 }
 
+export async function getTaskById(id: string): Promise<Task | null> {
+  try {
+    const r = await base(TABLES.TASKS).find(id);
+    const dueDate = (r.get('Due Date') as string) || '';
+    const status = (r.get('Status') as Task['status']) || 'Not Started';
+    const isTaskOverdue = dueDate && new Date(dueDate) < new Date() && status !== 'Completed';
+    return {
+      id: r.id,
+      title: (r.get('Title') as string) || '',
+      description: (r.get('Description') as string) || '',
+      opportunityId: (r.get('Opportunity ID') as string) || '',
+      opportunityName: (r.get('Opportunity Name') as string) || '',
+      assignedTo: (r.get('Assigned To ID') as string) || '',
+      assignedToName: (r.get('Assigned To Name') as string) || '',
+      dueDate,
+      status: isTaskOverdue ? 'Overdue' : status,
+      priority: (r.get('Priority') as Task['priority']) || 'Medium',
+      createdAt: (r.get('Created At') as string) || new Date().toISOString(),
+      updatedAt: (r.get('Updated At') as string) || '',
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function createTask(data: Partial<Task>): Promise<Task> {
   const record = await base(TABLES.TASKS).create({
     'Title': data.title,
@@ -342,10 +419,14 @@ export async function getWeeklyReviews(userId?: string, role?: string): Promise<
 }
 
 // ===================== STAGE HISTORY =====================
-export async function getStageHistory(opportunityId?: string): Promise<StageHistory[]> {
+export async function getStageHistory(userId?: string, role?: string, opportunityId?: string): Promise<StageHistory[]> {
   let formula = '';
+  if (role && role !== 'founder' && userId) {
+    formula = `{Changed By ID} = '${userId}'`;
+  }
   if (opportunityId) {
-    formula = `{Opportunity ID} = '${opportunityId}'`;
+    const opportunityFilter = `{Opportunity ID} = '${opportunityId}'`;
+    formula = formula ? `AND(${formula}, ${opportunityFilter})` : opportunityFilter;
   }
 
   const options: Record<string, unknown> = { sort: [{ field: 'Changed At', direction: 'desc' }] };
