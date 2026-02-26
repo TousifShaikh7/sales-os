@@ -3,29 +3,25 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { Zap, Eye, EyeOff } from 'lucide-react';
+import { Zap, Crown, Users } from 'lucide-react';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [loadingRole, setLoadingRole] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (role: 'founder' | 'rep') => {
     setError('');
-    setLoading(true);
+    setLoadingRole(role);
 
     try {
-      await login(email, password);
+      await login(role);
       router.push('/dashboard');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
-      setLoading(false);
+      setLoadingRole(null);
     }
   };
 
@@ -38,58 +34,37 @@ export default function LoginPage() {
             <Zap className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Sales OS</h1>
-          <p className="text-sm text-gray-500 mt-1">Sign in to your account</p>
+          <p className="text-sm text-gray-500 mt-1">Select your role to continue</p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        {/* Form / Selection */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm">
               {error}
             </div>
           )}
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
-              placeholder="you@company.com"
-              required
-            />
-          </div>
+          <div className="flex flex-col gap-4">
+            <button
+              onClick={() => handleLogin('founder')}
+              disabled={loadingRole !== null}
+              className={`w-full py-3.5 px-4 flex items-center justify-center gap-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-sm font-semibold transition-colors border border-indigo-200 ${loadingRole === 'founder' ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <Crown className="w-5 h-5" />
+              {loadingRole === 'founder' ? 'Entering...' : 'Enter as Founder'}
+            </button>
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors pr-10"
-                placeholder="••••••••"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
+            <button
+              onClick={() => handleLogin('rep')}
+              disabled={loadingRole !== null}
+              className={`w-full py-3.5 px-4 flex items-center justify-center gap-3 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold transition-colors border border-gray-200 ${loadingRole === 'rep' ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <Users className="w-5 h-5" />
+              {loadingRole === 'rep' ? 'Entering...' : 'Enter as Sales Rep'}
+            </button>
           </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
+        </div>
       </div>
     </div>
   );

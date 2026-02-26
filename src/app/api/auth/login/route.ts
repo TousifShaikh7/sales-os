@@ -1,27 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserByEmail } from '@/lib/services';
-import { verifyPassword, createToken } from '@/lib/auth';
+import { getUserByRole } from '@/lib/services';
+import { createToken } from '@/lib/auth';
 import { serialize } from 'cookie';
+import { UserRole } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const { role } = await request.json();
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+    if (!role || (role !== 'founder' && role !== 'rep')) {
+      return NextResponse.json({ error: 'Valid role is required (founder or rep)' }, { status: 400 });
     }
 
-    const user = await getUserByEmail(email);
-    if (!user || !user.password) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    const user = await getUserByRole(role as UserRole);
+
+    let authUser;
+
+    // If no user exists in Airtable, mock one so the app doesn't break
+    if (!user) {
+      authUser = {
+        id: `mock-${role}-id`,
+        name: role === 'founder' ? 'Founder Demo' : 'Sales Rep Demo',
+        email: `${role}@demo.com`,
+        role: role as UserRole
+      };
+    } else {
+      authUser = { id: user.id, name: user.name, email: user.email, role: user.role };
     }
 
-    const isValid = verifyPassword(password, user.password);
-    if (!isValid) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-    }
-
-    const authUser = { id: user.id, name: user.name, email: user.email, role: user.role };
     const token = createToken(authUser);
 
     const cookie = serialize('auth_token', token, {

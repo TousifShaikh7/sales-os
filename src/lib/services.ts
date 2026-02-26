@@ -1,5 +1,5 @@
 import { base, TABLES } from '@/lib/airtable';
-import { Lead, Opportunity, Activity, Task, WeeklyReview, StageHistory, User } from '@/types';
+import { Lead, Opportunity, Activity, Task, WeeklyReview, StageHistory, User, UserRole } from '@/types';
 import { getStageProbability, getForecastCategory, getWeightedValue } from '@/lib/utils';
 import { FieldSet } from 'airtable';
 
@@ -18,6 +18,21 @@ export async function getUsers(): Promise<User[]> {
 export async function getUserByEmail(email: string): Promise<User | null> {
   const records = await base(TABLES.USERS)
     .select({ filterByFormula: `{Email} = '${email}'`, maxRecords: 1 })
+    .all();
+  if (records.length === 0) return null;
+  const r = records[0];
+  return {
+    id: r.id,
+    name: r.get('Name') as string,
+    email: r.get('Email') as string,
+    role: r.get('Role') as User['role'],
+    password: r.get('Password') as string,
+  };
+}
+
+export async function getUserByRole(role: UserRole): Promise<User | null> {
+  const records = await base(TABLES.USERS)
+    .select({ filterByFormula: `{Role} = '${role}'`, maxRecords: 1 })
     .all();
   if (records.length === 0) return null;
   const r = records[0];
@@ -136,7 +151,7 @@ export async function getOpportunities(userId?: string, role?: string): Promise<
 export async function createOpportunity(data: Partial<Opportunity>): Promise<Opportunity> {
   const stage = data.stage || 'Prospecting';
   const dealValue = data.dealValue || 0;
-  
+
   const record = await base(TABLES.OPPORTUNITIES).create({
     'Name': data.name,
     'Lead ID': data.leadId || '',
