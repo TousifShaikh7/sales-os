@@ -13,7 +13,7 @@ function getAuthUser(request: NextRequest) {
   return verifyToken(token);
 }
 
-// GET /api/users - Get all users (founder only, or get list for dropdowns)
+// GET /api/users - Founder sees all users, reps can only see their own profile
 export async function GET(request: NextRequest) {
   const user = getAuthUser(request);
   if (!user) {
@@ -22,9 +22,14 @@ export async function GET(request: NextRequest) {
 
   try {
     const users = await getUsers();
-    // Strip passwords before returning
     const safeUsers = users.map(({ password, ...rest }) => rest);
-    return NextResponse.json({ data: safeUsers });
+
+    if (user.role === 'founder') {
+      return NextResponse.json({ data: safeUsers });
+    }
+
+    const currentUser = safeUsers.filter((u) => u.id === user.id);
+    return NextResponse.json({ data: currentUser });
   } catch (error) {
     console.error('Get users error:', error);
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });

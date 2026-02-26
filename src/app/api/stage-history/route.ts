@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   const opportunityId = searchParams.get('opportunityId') || undefined;
 
   try {
-    const history = await getStageHistory(opportunityId);
+    const history = await getStageHistory(user.id, user.role, opportunityId);
     return NextResponse.json({ data: history });
   } catch (error) {
     console.error('Get stage history error:', error);

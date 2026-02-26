@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { parse } from 'cookie';
-import { getTasks, createTask, updateTask } from '@/lib/services';
+import { getTasks, createTask, updateTask, getTaskById } from '@/lib/services';
 
 function getAuthUser(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
   // Only founder can create/assign tasks
   if (user.role !== 'founder') {
-    return NextResponse.json({ error: 'Only admins can create tasks' }, { status: 403 });
+    return NextResponse.json({ error: 'Only founder can create tasks' }, { status: 403 });
   }
 
   try {
@@ -57,10 +57,18 @@ export async function PUT(request: NextRequest) {
     const data = await request.json();
     const { id, ...updateData } = data;
 
-    // Non-founders can only update task status
+    const task = await getTaskById(id);
+    if (!task) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    if (user.role !== 'founder' && task.assignedTo !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Non-founders can only update their own task status
     if (user.role !== 'founder') {
-      const allowedFields = { status: updateData.status };
-      await updateTask(id, allowedFields);
+      await updateTask(id, { status: updateData.status });
     } else {
       await updateTask(id, updateData);
     }

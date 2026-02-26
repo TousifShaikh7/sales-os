@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 import { parse } from 'cookie';
-import { getLeads, createLead, updateLead } from '@/lib/services';
+import { getLeads, createLead, updateLead, getLeadById } from '@/lib/services';
 
 function getAuthUser(request: NextRequest) {
   const cookieHeader = request.headers.get('cookie') || '';
@@ -55,6 +55,20 @@ export async function PUT(request: NextRequest) {
   try {
     const data = await request.json();
     const { id, ...updateData } = data;
+
+    const lead = await getLeadById(id);
+    if (!lead) {
+      return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+    }
+
+    if (user.role !== 'founder' && lead.assignedTo !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    if (user.role !== 'founder') {
+      delete updateData.assignedTo;
+    }
+
     await updateLead(id, updateData);
     return NextResponse.json({ success: true });
   } catch (error) {
